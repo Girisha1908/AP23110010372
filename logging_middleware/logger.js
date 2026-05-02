@@ -1,6 +1,8 @@
 // Logging Middleware — Core implementation
 // Sends structured log entries to the remote evaluation service.
 
+import { TOKEN } from "../auth/token.js";
+
 const LOG_ENDPOINT = "http://20.207.122.201/evaluation-service/logs";
 
 // Allowed values for validation
@@ -58,7 +60,10 @@ async function Log(stack, level, pkg, message) {
   try {
     await fetch(LOG_ENDPOINT, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${TOKEN}`,
+      },
       body: JSON.stringify(body),
     });
   } catch (_) {
