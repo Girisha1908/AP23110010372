@@ -52,10 +52,43 @@ This approach trades a small amount of network overhead for **guaranteed freshne
 
 ## Why This Sorting Approach Works
 
-
 1. **Correct by specification** — The two-key sort directly implements the stated priority rules: type weight first, recency second.
 
 2. **Efficient** — JavaScript's `Array.sort()` uses TimSort (O(n log n)). For a campus notification set (typically hundreds, not millions), this is effectively instant.
 
+## Logging Strategy
 
-3. **Debuggable** — Every step (fetch, parse, sort, slice) produces a structured log entry via the Logging Middleware, making it possible to diagnose issues using logs alone — without access to the running process.
+The system integrates a reusable Logging Middleware to capture all key operations.
+
+Logs are generated for:
+- API request initiation and completion
+- API failures and error states
+- Data parsing steps
+- Priority computation and sorting
+- Final result generation
+
+Each log includes structured context (stack, level, package, message), enabling full traceability of execution.
+
+This ensures that even without direct access to the system, issues can be diagnosed using logs alone.
+
+## API Integration
+
+All API calls are made to protected endpoints and require an Authorization token.
+
+Each request includes:
+Authorization: Bearer <token>
+
+This ensures secure access to both:
+- notification data
+- logging service
+
+Failure to include authentication results in request rejection.
+
+## Error Handling
+
+The system gracefully handles API failures:
+
+- If notification fetch fails, an error is logged
+- The system avoids crashing and can return an empty or partial result
+
+Logging ensures failures are visible and traceable.

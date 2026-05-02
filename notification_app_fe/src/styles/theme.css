@@ -1,0 +1,12 @@
+/* styles/theme.css — supplementary theme tokens (MUI handles primary styling) */
+
+:root {
+  --color-placement: #6C63FF;
+  --color-result: #00BFA6;
+  --color-event: #FF6D00;
+  --color-bg: #f7f8fc;
+  --color-surface: #ffffff;
+  --color-text: #222222;
+  --color-text-muted: #888888;
+  --color-border: #f0f0f0;
+}
