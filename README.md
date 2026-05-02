@@ -17,7 +17,7 @@ A robust, mobile-first notification system built with a React frontend and a Nod
 ![All Notifications](screenshots/all-notification-tabb.png)
 
 ### Priority Tab
-![Priority Notifications](screenshots/priority-tavv.png)
+![Priority Notifications](screenshots/priority-taab.png)
 
 ## Getting Started
 
