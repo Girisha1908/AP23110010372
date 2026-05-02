@@ -1,24 +1,16 @@
-// PriorityNotificationsPage — shows top N notifications sorted by priority
-// Reuses Stage 1 logic: weight (Placement=3, Result=2, Event=1) + timestamp DESC
 import { useState, useEffect, useCallback } from "react";
-import { Box, Typography, Paper, Divider, Select, MenuItem, FormControl } from "@mui/material";
-import StarIcon from "@mui/icons-material/Star";
+import { Box, Typography } from "@mui/material";
 import NotificationList from "../components/NotificationList.jsx";
+import FilterBar from "../components/FilterBar.jsx";
 import { fetchNotifications } from "../api/notifications.js";
 import { Log } from "../api/logger.js";
 
-// Priority weights — identical to Stage 1
 const TYPE_WEIGHTS = {
   Placement: 3,
   Result: 2,
   Event: 1,
 };
 
-/**
- * Sorts notifications by priority (same logic as Stage 1).
- * 1. Type weight descending
- * 2. Timestamp descending (tiebreaker)
- */
 function sortByPriority(notifications) {
   return [...notifications].sort((a, b) => {
     const weightDiff = (TYPE_WEIGHTS[b.Type] || 0) - (TYPE_WEIGHTS[a.Type] || 0);
@@ -28,7 +20,9 @@ function sortByPriority(notifications) {
 }
 
 export default function PriorityNotificationsPage() {
-  const [topN, setTopN] = useState(10);
+  const [topN] = useState(10);
+  const [filter, setFilter] = useState("Placement"); // Default active as in screenshot
+  const [allSorted, setAllSorted] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -43,150 +37,72 @@ export default function PriorityNotificationsPage() {
     );
 
     try {
-      // Fetch multiple pages to gather enough data for priority sorting
-      // API limit is capped at 10 per page, so fetch several pages
-      const allNotifications = [];
-      const pagesToFetch = 5; // 5 pages × 10 = 50 notifications max
+      const all = [];
+      const pagesToFetch = 5;
 
       for (let p = 1; p <= pagesToFetch; p++) {
         const result = await fetchNotifications({ page: p, limit: 10 });
-        allNotifications.push(...result.notifications);
-
-        // Stop early if we got fewer than the limit (no more data)
+        all.push(...result.notifications);
         if (result.notifications.length < 10) break;
       }
 
-      await Log(
-        "frontend", "debug", "utils",
-        `computing priority for ${allNotifications.length} notifications using weights: Placement=3, Result=2, Event=1`
-      );
-
-      const sorted = sortByPriority(allNotifications);
-
-      await Log(
-        "frontend", "debug", "utils",
-        `priority sorting complete — slicing top ${topN} from ${sorted.length} total`
-      );
-
+      const sorted = sortByPriority(all);
       const sliced = sorted.slice(0, topN);
-      setNotifications(sliced);
-
-      // Build type breakdown for logging
-      const typeCounts = sliced.reduce((acc, n) => {
-        acc[n.Type] = (acc[n.Type] || 0) + 1;
-        return acc;
-      }, {});
+      setAllSorted(sliced);
+      
+      // Default to placement filter if set
+      setNotifications(sliced.filter((n) => n.Type === "Placement"));
 
       await Log(
-        "frontend", "info", "page",
-        `PriorityNotificationsPage: displaying ${sliced.length} priority notifications — breakdown: ${JSON.stringify(typeCounts)}`
+        "frontend", "info", "component",
+        `priority notifications rendered`
       );
     } catch (err) {
       setError(err.message);
-      await Log(
-        "frontend", "error", "page",
-        `PriorityNotificationsPage: failed to fetch/sort notifications — ${err.message}`
-      );
     } finally {
       setLoading(false);
     }
   }, [topN]);
 
   useEffect(() => {
-    Log(
-      "frontend", "info", "page",
-      "PriorityNotificationsPage mounted — initial render"
-    );
-  }, []);
-
-  useEffect(() => {
     fetchAndSort();
   }, [fetchAndSort]);
 
-  const handleTopNChange = async (e) => {
-    const newN = e.target.value;
-    setTopN(newN);
+  const handleFilterChange = async (newFilter) => {
+    setFilter(newFilter);
+    if (newFilter === "All") {
+      setNotifications(allSorted);
+    } else {
+      setNotifications(allSorted.filter((n) => n.Type === newFilter));
+    }
     await Log(
-      "frontend", "debug", "state",
-      `priority page: top N changed to ${newN}`
+      "frontend", "info", "component",
+      `filter changed to ${newFilter}`
     );
   };
 
   return (
-    <Paper
-      elevation={0}
-      sx={{
-        borderRadius: 3,
-        overflow: "hidden",
-        bgcolor: "#fff",
-        border: "1px solid #f0f0f0",
-      }}
-    >
-      {/* Header */}
-      <Box
+    <Box>
+      <Typography
+        variant="body1"
         sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 1.5,
-          px: { xs: 2, sm: 3 },
-          py: 2,
-          background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-          flexWrap: "wrap",
+          color: "#333",
+          mb: 1.5,
+          textAlign: "center"
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <StarIcon sx={{ color: "#fff", fontSize: 24 }} />
-          <Typography variant="h6" sx={{ color: "#fff", fontWeight: 700, fontSize: "1rem" }}>
-            Priority Notifications
-          </Typography>
-        </Box>
+        Sorted by Priority (Placement &gt; Result &gt; Event, then recency)
+      </Typography>
 
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.8)" }}>
-            Show top:
-          </Typography>
-          <FormControl size="small">
-            <Select
-              id="priority-top-n-select"
-              value={topN}
-              onChange={handleTopNChange}
-              sx={{
-                fontSize: "0.8rem",
-                height: 30,
-                color: "#fff",
-                bgcolor: "rgba(255,255,255,0.15)",
-                "& .MuiSelect-icon": { color: "#fff" },
-                "& .MuiOutlinedInput-notchedOutline": { border: "none" },
-              }}
-            >
-              <MenuItem value={5}>5</MenuItem>
-              <MenuItem value={10}>10</MenuItem>
-              <MenuItem value={20}>20</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
+      <FilterBar currentFilter={filter} onFilterChange={handleFilterChange} />
+
+      <Box sx={{ mt: 1 }}>
+        <NotificationList
+          notifications={notifications}
+          loading={loading}
+          error={error}
+        />
       </Box>
-
-      {/* Priority legend */}
-      <Box sx={{ display: "flex", gap: 2, px: { xs: 2, sm: 3 }, py: 1.5, flexWrap: "wrap" }}>
-        {Object.entries(TYPE_WEIGHTS).map(([type, weight]) => (
-          <Typography key={type} variant="caption" sx={{ color: "#888" }}>
-            <strong>{type}</strong> = weight {weight}
-          </Typography>
-        ))}
-      </Box>
-
-      <Divider />
-
-      {/* Notification List */}
-      <NotificationList
-        notifications={notifications}
-        loading={loading}
-        error={error}
-        showWeight={true}
-        weights={TYPE_WEIGHTS}
-      />
-    </Paper>
+    </Box>
   );
 }

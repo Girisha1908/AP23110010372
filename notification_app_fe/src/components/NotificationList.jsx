@@ -1,25 +1,19 @@
-// NotificationList — renders a list of NotificationCard components
+// NotificationList — renders a vertical list of NotificationCard components
 import { Box, Typography, CircularProgress, Alert } from "@mui/material";
 import NotificationCard from "./NotificationCard.jsx";
 
-export default function NotificationList({
-  notifications,
-  loading,
-  error,
-  showWeight = false,
-  weights = {},
-}) {
+export default function NotificationList({ notifications, loading, error }) {
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
-        <CircularProgress sx={{ color: "#6C63FF" }} />
+        <CircularProgress size={28} sx={{ color: "#4361ee" }} />
       </Box>
     );
   }
 
   if (error) {
     return (
-      <Alert severity="error" sx={{ m: 2 }}>
+      <Alert severity="error" sx={{ m: 1, borderRadius: "10px" }}>
         {error}
       </Alert>
     );
@@ -28,7 +22,7 @@ export default function NotificationList({
   if (!notifications || notifications.length === 0) {
     return (
       <Box sx={{ textAlign: "center", py: 6 }}>
-        <Typography variant="body1" sx={{ color: "#999" }}>
+        <Typography variant="body2" sx={{ color: "#999" }}>
           No notifications found
         </Typography>
       </Box>
@@ -36,14 +30,9 @@ export default function NotificationList({
   }
 
   return (
-    <Box sx={{ px: { xs: 1, sm: 2 }, py: 1 }}>
+    <Box>
       {notifications.map((n) => (
-        <NotificationCard
-          key={n.ID}
-          notification={n}
-          showWeight={showWeight}
-          weight={weights[n.Type] || 0}
-        />
+        <NotificationCard key={n.ID} notification={n} />
       ))}
     </Box>
   );
