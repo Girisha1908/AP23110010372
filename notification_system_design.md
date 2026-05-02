@@ -43,8 +43,14 @@ This means:
 
 This approach trades a small amount of network overhead for **guaranteed freshness**, which is the correct tradeoff for a campus notification system where timeliness matters.
 
-## Why This Sorting Approach Works
+## Stage 1 Output
 
+![Stage 1 Output](./screenshots/output-1.png)
+
+![Stage 1 Output](./screenshots/output-2.png)
+
+
+## Why This Sorting Approach Works
 
 
 1. **Correct by specification** — The two-key sort directly implements the stated priority rules: type weight first, recency second.
